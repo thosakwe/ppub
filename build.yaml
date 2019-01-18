@@ -1,0 +1,11 @@
+targets:
+  _a:
+    sources:
+      - lib/src/models/package_version.dart
+      - lib/src/models/uploader.dart
+      - lib/src/models/user.dart
+  $default:
+    dependencies:
+      - :_a
+    sources:
+      - lib/src/models/package.dart

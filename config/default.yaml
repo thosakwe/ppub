@@ -1,0 +1,4 @@
+uploads:
+  path: ./uploads
+postgres:
+  username: $USER

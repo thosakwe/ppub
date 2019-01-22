@@ -5,10 +5,31 @@ import 'package:angel_migration_runner/postgres.dart';
 import 'package:args/command_runner.dart';
 import 'package:io/ansi.dart';
 import 'package:path/path.dart' as p;
+import 'package:postgres/postgres.dart';
 import 'package:private_pub/models.dart';
 import 'package:private_pub/private_pub.dart';
 import 'package:prompts/prompts.dart' as prompts;
 import 'package:yaml/yaml.dart' as yaml;
+
+File get configFile {
+  return File(p.join(defaultConfigDirectory, 'config.yaml'));
+}
+
+Future<PostgreSQLConnection> connectToInstalledPostgres() async {
+  var config = await yaml.loadYaml(await configFile.readAsString(),
+      sourceUrl: configFile.uri);
+  return connectToPostgres(config as Map)();
+}
+
+Future<PostgresMigrationRunner> createMigrationRunner() async {
+  var connection = await connectToInstalledPostgres();
+  return PostgresMigrationRunner(connection, migrations: [
+    UserMigration(),
+    PackageVersionMigration(),
+    PackageMigration(),
+    UploaderMigration(),
+  ]);
+}
 
 class InstallCommand extends Command {
   @override
@@ -20,16 +41,12 @@ class InstallCommand extends Command {
   @override
   Future run() async {
     // Create the config file.
-    var configFile = File(p.join(defaultConfigDirectory, 'config.yaml'));
-    var deleteMessage = 'Delete existing configuration "${configFile.path}"?';
     var uploadPathMessage =
         'Upload directory (relative to $defaultConfigDirectory)';
     var genConfigFile = !await configFile.exists();
 
-    if (!genConfigFile && prompts.getBool(deleteMessage)) {
-      // TODO: Add uninstall command that deletes file, drops migrations
+    if (!genConfigFile) {
       genConfigFile = await runner.run(['uninstall']) as bool;
-      await configFile.delete(recursive: true);
     }
 
     if (genConfigFile) {
@@ -73,9 +90,6 @@ class InstallCommand extends Command {
       await sink.close();
 
       // Config is done, now run the migrations.
-      var config = await yaml.loadYaml(await configFile.readAsString(),
-          sourceUrl: configFile.uri);
-      var connection = connectToPostgres(config as Map)();
 
       // Run psql and create the database
       // postgresql://[user[:password]@][netloc][:port][/dbname]
@@ -86,7 +100,7 @@ class InstallCommand extends Command {
           port: int.parse(port));
       var psqlArgs = [
         '-c',
-        'CREATE DATABASE "$databaseName"',
+        'CREATE DATABASE "$databaseName";',
         pgUri.toString()
       ];
       var pgInvocation = 'psql ${psqlArgs.join(' ')}';
@@ -102,12 +116,7 @@ class InstallCommand extends Command {
         return;
       }
 
-      var runner = PostgresMigrationRunner(connection, migrations: [
-        UserMigration(),
-        PackageVersionMigration(),
-        PackageMigration(),
-        UploaderMigration(),
-      ]);
+      var runner = await createMigrationRunner();
       await runMigrations(runner, ['up']);
 
       // TODO: Daemon, systemd, nginx
@@ -116,8 +125,6 @@ class InstallCommand extends Command {
       // }
 
       print(cyan.wrap('ppub is now installed!'));
-    } else {
-      print('Not modifying current configuration.');
     }
   }
 }

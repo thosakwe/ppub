@@ -11,7 +11,10 @@ class UserMigration extends Migration {
   up(Schema schema) {
     schema.create('users', (table) {
       table.serial('id')..primaryKey();
+      table.varChar('username');
       table.varChar('email');
+      table.varChar('hashed_password');
+      table.varChar('salt');
       table.timeStamp('created_at');
       table.timeStamp('updated_at');
     });
@@ -44,7 +47,15 @@ class UserQuery extends Query<User, UserQueryWhere> {
 
   @override
   get fields {
-    return const ['id', 'email', 'created_at', 'updated_at'];
+    return const [
+      'id',
+      'username',
+      'email',
+      'hashed_password',
+      'salt',
+      'created_at',
+      'updated_at'
+    ];
   }
 
   @override
@@ -61,9 +72,12 @@ class UserQuery extends Query<User, UserQueryWhere> {
     if (row.every((x) => x == null)) return null;
     var model = new User(
         id: row[0].toString(),
-        email: (row[1] as String),
-        createdAt: (row[2] as DateTime),
-        updatedAt: (row[3] as DateTime));
+        username: (row[1] as String),
+        email: (row[2] as String),
+        hashedPassword: (row[3] as String),
+        salt: (row[4] as String),
+        createdAt: (row[5] as DateTime),
+        updatedAt: (row[6] as DateTime));
     return model;
   }
 
@@ -76,13 +90,23 @@ class UserQuery extends Query<User, UserQueryWhere> {
 class UserQueryWhere extends QueryWhere {
   UserQueryWhere(UserQuery query)
       : id = new NumericSqlExpressionBuilder<int>(query, 'id'),
+        username = new StringSqlExpressionBuilder(query, 'username'),
         email = new StringSqlExpressionBuilder(query, 'email'),
+        hashedPassword =
+            new StringSqlExpressionBuilder(query, 'hashed_password'),
+        salt = new StringSqlExpressionBuilder(query, 'salt'),
         createdAt = new DateTimeSqlExpressionBuilder(query, 'created_at'),
         updatedAt = new DateTimeSqlExpressionBuilder(query, 'updated_at');
 
   final NumericSqlExpressionBuilder<int> id;
 
+  final StringSqlExpressionBuilder username;
+
   final StringSqlExpressionBuilder email;
+
+  final StringSqlExpressionBuilder hashedPassword;
+
+  final StringSqlExpressionBuilder salt;
 
   final DateTimeSqlExpressionBuilder createdAt;
 
@@ -90,7 +114,7 @@ class UserQueryWhere extends QueryWhere {
 
   @override
   get expressionBuilders {
-    return [id, email, createdAt, updatedAt];
+    return [id, username, email, hashedPassword, salt, createdAt, updatedAt];
   }
 }
 
@@ -100,11 +124,26 @@ class UserQueryValues extends MapQueryValues {
   }
 
   set id(int value) => values['id'] = value;
+  String get username {
+    return (values['username'] as String);
+  }
+
+  set username(String value) => values['username'] = value;
   String get email {
     return (values['email'] as String);
   }
 
   set email(String value) => values['email'] = value;
+  String get hashedPassword {
+    return (values['hashed_password'] as String);
+  }
+
+  set hashedPassword(String value) => values['hashed_password'] = value;
+  String get salt {
+    return (values['salt'] as String);
+  }
+
+  set salt(String value) => values['salt'] = value;
   DateTime get createdAt {
     return (values['created_at'] as DateTime);
   }
@@ -117,7 +156,10 @@ class UserQueryValues extends MapQueryValues {
   set updatedAt(DateTime value) => values['updated_at'] = value;
   void copyFrom(User model) {
     values.addAll({
+      'username': model.username,
       'email': model.email,
+      'hashed_password': model.hashedPassword,
+      'salt': model.salt,
       'created_at': model.createdAt,
       'updated_at': model.updatedAt
     });
@@ -130,13 +172,29 @@ class UserQueryValues extends MapQueryValues {
 
 @generatedSerializable
 class User extends _User {
-  User({this.id, this.email, this.createdAt, this.updatedAt});
+  User(
+      {this.id,
+      this.username,
+      this.email,
+      this.hashedPassword,
+      this.salt,
+      this.createdAt,
+      this.updatedAt});
 
   @override
   final String id;
 
   @override
+  final String username;
+
+  @override
   final String email;
+
+  @override
+  final String hashedPassword;
+
+  @override
+  final String salt;
 
   @override
   final DateTime createdAt;
@@ -145,10 +203,19 @@ class User extends _User {
   final DateTime updatedAt;
 
   User copyWith(
-      {String id, String email, DateTime createdAt, DateTime updatedAt}) {
+      {String id,
+      String username,
+      String email,
+      String hashedPassword,
+      String salt,
+      DateTime createdAt,
+      DateTime updatedAt}) {
     return new User(
         id: id ?? this.id,
+        username: username ?? this.username,
         email: email ?? this.email,
+        hashedPassword: hashedPassword ?? this.hashedPassword,
+        salt: salt ?? this.salt,
         createdAt: createdAt ?? this.createdAt,
         updatedAt: updatedAt ?? this.updatedAt);
   }
@@ -156,14 +223,18 @@ class User extends _User {
   bool operator ==(other) {
     return other is _User &&
         other.id == id &&
+        other.username == username &&
         other.email == email &&
+        other.hashedPassword == hashedPassword &&
+        other.salt == salt &&
         other.createdAt == createdAt &&
         other.updatedAt == updatedAt;
   }
 
   @override
   int get hashCode {
-    return hashObjects([id, email, createdAt, updatedAt]);
+    return hashObjects(
+        [id, username, email, hashedPassword, salt, createdAt, updatedAt]);
   }
 
   Map<String, dynamic> toJson() {
@@ -179,7 +250,10 @@ abstract class UserSerializer {
   static User fromMap(Map map) {
     return new User(
         id: map['id'] as String,
+        username: map['username'] as String,
         email: map['email'] as String,
+        hashedPassword: map['hashed_password'] as String,
+        salt: map['salt'] as String,
         createdAt: map['created_at'] != null
             ? (map['created_at'] is DateTime
                 ? (map['created_at'] as DateTime)
@@ -198,7 +272,10 @@ abstract class UserSerializer {
     }
     return {
       'id': model.id,
+      'username': model.username,
       'email': model.email,
+      'hashed_password': model.hashedPassword,
+      'salt': model.salt,
       'created_at': model.createdAt?.toIso8601String(),
       'updated_at': model.updatedAt?.toIso8601String()
     };
@@ -208,14 +285,23 @@ abstract class UserSerializer {
 abstract class UserFields {
   static const List<String> allFields = const <String>[
     id,
+    username,
     email,
+    hashedPassword,
+    salt,
     createdAt,
     updatedAt
   ];
 
   static const String id = 'id';
 
+  static const String username = 'username';
+
   static const String email = 'email';
+
+  static const String hashedPassword = 'hashed_password';
+
+  static const String salt = 'salt';
 
   static const String createdAt = 'created_at';
 

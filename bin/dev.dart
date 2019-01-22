@@ -28,7 +28,7 @@ Future<Angel> createServer() async {
 
   var fs = LocalFileSystem();
 
-  await app.configure(ppub.configureServer(fs, './config'));
+  await app.configure(ppub.configureServer(fs, ppub.defaultConfigDirectory));
 
   return app;
 }

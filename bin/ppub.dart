@@ -5,6 +5,7 @@ import 'package:private_pub/commands.dart';
 Future main(List<String> args) {
   var runner = CommandRunner('ppub', 'Private Pub host.')
     ..addCommand(InstallCommand())
-    ..addCommand(StartCommand());
+    ..addCommand(StartCommand())
+    ..addCommand(UninstallCommand());
   return runner.run(args);
 }

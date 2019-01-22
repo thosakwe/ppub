@@ -7,6 +7,11 @@ part 'user.g.dart';
 @serializable
 @orm
 abstract class _User extends Model {
-  // Lowercase
+  String get username;
+
   String get email;
+
+  String get hashedPassword;
+
+  String get salt;
 }

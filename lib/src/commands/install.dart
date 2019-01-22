@@ -29,8 +29,8 @@ class InstallCommand extends Command {
 
     if (!genConfigFile && prompts.getBool(deleteMessage)) {
       // TODO: Add uninstall command that deletes file, drops migrations
+      genConfigFile = await runner.run(['uninstall']) as bool;
       await configFile.delete(recursive: true);
-      genConfigFile = true;
     }
 
     if (genConfigFile) {

@@ -11,6 +11,7 @@ class UserMigration extends Migration {
   up(Schema schema) {
     schema.create('users', (table) {
       table.serial('id')..primaryKey();
+      table.varChar('email');
       table.timeStamp('created_at');
       table.timeStamp('updated_at');
     });
@@ -43,7 +44,7 @@ class UserQuery extends Query<User, UserQueryWhere> {
 
   @override
   get fields {
-    return const ['id', 'created_at', 'updated_at'];
+    return const ['id', 'email', 'created_at', 'updated_at'];
   }
 
   @override
@@ -60,8 +61,9 @@ class UserQuery extends Query<User, UserQueryWhere> {
     if (row.every((x) => x == null)) return null;
     var model = new User(
         id: row[0].toString(),
-        createdAt: (row[1] as DateTime),
-        updatedAt: (row[2] as DateTime));
+        email: (row[1] as String),
+        createdAt: (row[2] as DateTime),
+        updatedAt: (row[3] as DateTime));
     return model;
   }
 
@@ -74,10 +76,13 @@ class UserQuery extends Query<User, UserQueryWhere> {
 class UserQueryWhere extends QueryWhere {
   UserQueryWhere(UserQuery query)
       : id = new NumericSqlExpressionBuilder<int>(query, 'id'),
+        email = new StringSqlExpressionBuilder(query, 'email'),
         createdAt = new DateTimeSqlExpressionBuilder(query, 'created_at'),
         updatedAt = new DateTimeSqlExpressionBuilder(query, 'updated_at');
 
   final NumericSqlExpressionBuilder<int> id;
+
+  final StringSqlExpressionBuilder email;
 
   final DateTimeSqlExpressionBuilder createdAt;
 
@@ -85,7 +90,7 @@ class UserQueryWhere extends QueryWhere {
 
   @override
   get expressionBuilders {
-    return [id, createdAt, updatedAt];
+    return [id, email, createdAt, updatedAt];
   }
 }
 
@@ -95,6 +100,11 @@ class UserQueryValues extends MapQueryValues {
   }
 
   set id(int value) => values['id'] = value;
+  String get email {
+    return (values['email'] as String);
+  }
+
+  set email(String value) => values['email'] = value;
   DateTime get createdAt {
     return (values['created_at'] as DateTime);
   }
@@ -106,8 +116,11 @@ class UserQueryValues extends MapQueryValues {
 
   set updatedAt(DateTime value) => values['updated_at'] = value;
   void copyFrom(User model) {
-    values
-        .addAll({'created_at': model.createdAt, 'updated_at': model.updatedAt});
+    values.addAll({
+      'email': model.email,
+      'created_at': model.createdAt,
+      'updated_at': model.updatedAt
+    });
   }
 }
 
@@ -117,10 +130,13 @@ class UserQueryValues extends MapQueryValues {
 
 @generatedSerializable
 class User extends _User {
-  User({this.id, this.createdAt, this.updatedAt});
+  User({this.id, this.email, this.createdAt, this.updatedAt});
 
   @override
   final String id;
+
+  @override
+  final String email;
 
   @override
   final DateTime createdAt;
@@ -128,9 +144,11 @@ class User extends _User {
   @override
   final DateTime updatedAt;
 
-  User copyWith({String id, DateTime createdAt, DateTime updatedAt}) {
+  User copyWith(
+      {String id, String email, DateTime createdAt, DateTime updatedAt}) {
     return new User(
         id: id ?? this.id,
+        email: email ?? this.email,
         createdAt: createdAt ?? this.createdAt,
         updatedAt: updatedAt ?? this.updatedAt);
   }
@@ -138,13 +156,14 @@ class User extends _User {
   bool operator ==(other) {
     return other is _User &&
         other.id == id &&
+        other.email == email &&
         other.createdAt == createdAt &&
         other.updatedAt == updatedAt;
   }
 
   @override
   int get hashCode {
-    return hashObjects([id, createdAt, updatedAt]);
+    return hashObjects([id, email, createdAt, updatedAt]);
   }
 
   Map<String, dynamic> toJson() {
@@ -160,6 +179,7 @@ abstract class UserSerializer {
   static User fromMap(Map map) {
     return new User(
         id: map['id'] as String,
+        email: map['email'] as String,
         createdAt: map['created_at'] != null
             ? (map['created_at'] is DateTime
                 ? (map['created_at'] as DateTime)
@@ -178,6 +198,7 @@ abstract class UserSerializer {
     }
     return {
       'id': model.id,
+      'email': model.email,
       'created_at': model.createdAt?.toIso8601String(),
       'updated_at': model.updatedAt?.toIso8601String()
     };
@@ -187,11 +208,14 @@ abstract class UserSerializer {
 abstract class UserFields {
   static const List<String> allFields = const <String>[
     id,
+    email,
     createdAt,
     updatedAt
   ];
 
   static const String id = 'id';
+
+  static const String email = 'email';
 
   static const String createdAt = 'created_at';
 

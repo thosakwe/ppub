@@ -6,4 +6,7 @@ part 'user.g.dart';
 
 @serializable
 @orm
-abstract class _User extends Model {}
+abstract class _User extends Model {
+  // Lowercase
+  String get email;
+}

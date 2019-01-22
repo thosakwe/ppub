@@ -1,20 +1,19 @@
 import 'dart:convert';
-import 'dart:io';
+import 'dart:io' show gzip, BytesBuilder;
 import 'package:angel_framework/angel_framework.dart';
 import 'package:archive/archive.dart';
 import 'package:angel_orm/angel_orm.dart';
-import 'package:http_parser/http_parser.dart';
-import 'package:path/path.dart' as p;
+import 'package:file/file.dart';
 import 'package:private_pub/models.dart';
 import 'package:private_pub/private_pub.dart';
 import 'package:pubspec_parse/pubspec_parse.dart';
 
 // TODO: Authentication
-// TODO: Use package:file
 // TODO: Root URL that lists packages
 // TODO: Search endpoint
-void Function(Router<RequestHandler>) packageRoutes(QueryExecutor executor) {
+void Function(Router<RequestHandler>) packageRoutes(FileSystem fs, QueryExecutor executor) {
   return (router) {
+    var p = fs.path;
     Future<bool> resolvePackage(RequestContext req, ResponseContext res) async {
       var query = PackageQuery()
         ..where.name.equals(req.params['name'] as String);
@@ -127,7 +126,7 @@ void Function(Router<RequestHandler>) packageRoutes(QueryExecutor executor) {
       // Save the file.
       var archivePath =
           p.join(defaultConfigDirectory, './uploads', archiveBasename);
-      var archiveFile = File(archivePath);
+      var archiveFile = fs.file(archivePath);
       await archiveFile.create(recursive: true);
       await archiveFile.writeAsBytes(gzippedArchiveBytes);
 

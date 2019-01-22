@@ -56,7 +56,7 @@ AngelConfigurer configureServer(FileSystem fs, String configDirectory) {
       ..container.registerSingleton<QueryExecutor>(executor)
       ..shutdownHooks.add((_) => executor.close());
 
-    await app.configure(routes.configureServer);
+    await app.configure(routes.configureServer(fs));
 
     // Default to 404
     app.fallback((req, res) => throw AngelHttpException.notFound());

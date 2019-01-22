@@ -43,6 +43,10 @@ class InstallCommand extends Command {
 
       // Uploads config
       var sink = await configFile.openWrite();
+      var apiRoot = prompts.get('Public API root',
+          defaultsTo: 'http://localhost:3000/api');
+      sink.writeln('api_root: "$apiRoot"');
+
       var uploadPath = prompts.get(uploadPathMessage, defaultsTo: './uploads');
       sink.writeln('uploads:\n  path: "$uploadPath"');
 

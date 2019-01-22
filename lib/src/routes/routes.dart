@@ -9,18 +9,19 @@ import 'package.dart';
 AngelConfigurer configureServer(FileSystem fs) {
   return (Angel app) {
     var executor = app.container.make<QueryExecutor>();
+    var apiRoot = Uri.parse(app.configuration['api_root'] as String);
     var uploadDirBase = app.configuration['uploads']['path'] as String;
     var uploadDirPath = p.join(defaultConfigDirectory, uploadDirBase);
-    configureRouter(app, fs, fs.directory(uploadDirPath), executor)(app);
+    configureRouter(app, fs, fs.directory(uploadDirPath), executor, apiRoot)(app);
   };
 }
 
 void Function(Router<RequestHandler>) configureRouter(
-    Angel app, FileSystem fs, Directory uploadDir, QueryExecutor executor) {
+    Angel app, FileSystem fs, Directory uploadDir, QueryExecutor executor, Uri apiRoot) {
   return (router) {
     var vDir = CachingVirtualDirectory(app, fs, source: uploadDir);
 
-    router.group('/api/packages', packageRoutes(fs, executor));
+    router.group('/api/packages', packageRoutes(fs, executor, apiRoot));
 
     router.get(r'/packages/:name/versions/:versionName.tar.gz', (req, res) {
       // TODO: Angel is lumping ".tar.gz" into versionName

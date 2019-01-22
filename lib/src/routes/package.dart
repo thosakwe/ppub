@@ -11,7 +11,8 @@ import 'package:pubspec_parse/pubspec_parse.dart';
 // TODO: Authentication
 // TODO: Root URL that lists packages
 // TODO: Search endpoint
-void Function(Router<RequestHandler>) packageRoutes(FileSystem fs, QueryExecutor executor) {
+void Function(Router<RequestHandler>) packageRoutes(
+    FileSystem fs, QueryExecutor executor, Uri apiRoot) {
   return (router) {
     var p = fs.path;
     Future<bool> resolvePackage(RequestContext req, ResponseContext res) async {
@@ -89,12 +90,8 @@ void Function(Router<RequestHandler>) packageRoutes(FileSystem fs, QueryExecutor
 
       // Check if such a version already exists.
       if (package.versions.any((v) => v.version == pubspec.version)) {
-        // TODO: Read host path from config
-        var uri = Uri(
-            scheme: 'http',
-            host: 'localhost',
-            port: 3000,
-            path: p.join('api', 'packages', 'upload', 'exists'),
+        var uri = apiRoot.replace(
+            path: p.join(apiRoot.path, 'packages', 'upload', 'exists'),
             queryParameters: {
               'package': pubspec.name,
               'version': pubspec.version.toString()
@@ -105,14 +102,14 @@ void Function(Router<RequestHandler>) packageRoutes(FileSystem fs, QueryExecutor
 
       // Create the new version in the database.
       // /:name/versions/:versionName.tar.gz
-      // TODO: Read host from configuration
       var archiveBasename = '${pubspec.name}-${pubspec.version}.tar.gz';
-      var archiveUrl = Uri(
-          scheme: 'http',
-          host: 'localhost',
-          port: 3000,
-          path: p.join('api', 'packages', pubspec.name, 'versions',
-              pubspec.version.toString() + '.tar.gz'));
+      var archiveUrl = apiRoot.replace(
+          path: p.join(apiRoot.path, 'packages', pubspec.name, 'versions',
+              pubspec.version.toString() + '.tar.gz'),
+          queryParameters: {
+            'package': pubspec.name,
+            'version': pubspec.version.toString()
+          });
 
       var versionQuery = PackageVersionQuery();
       versionQuery.values
@@ -130,8 +127,8 @@ void Function(Router<RequestHandler>) packageRoutes(FileSystem fs, QueryExecutor
       await archiveFile.create(recursive: true);
       await archiveFile.writeAsBytes(gzippedArchiveBytes);
 
-      // TODO: Read host path from config
-      res.redirect('http://localhost:3000/api/packages/upload/success');
+      res.redirect(apiRoot.replace(
+          path: p.join(apiRoot.path, 'packages', 'upload', 'success')));
     });
 
     router.get('/upload/success', (req, res) {

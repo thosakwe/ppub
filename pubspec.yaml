@@ -27,14 +27,5 @@ dev_dependencies:
   angel_orm_generator: ^2.0.0-dev
   angel_serialize_generator: ^2.0.0
   build_runner: ^1.0.0
-dependency_overrides:
-  angel_orm:
-    git:
-      url: https://github.com/angel-dart/orm.git
-      path: angel_orm
-  angel_orm_generator:
-    git:
-      url: https://github.com/angel-dart/orm.git
-      path: angel_orm_generator
 executables:
   ppub: ppub

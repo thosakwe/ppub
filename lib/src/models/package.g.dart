@@ -35,7 +35,7 @@ class PackageQuery extends Query<Package, PackageQueryWhere> {
         additionalFields: const [
           'package_id',
           'archive_url',
-          'pubspec_yaml',
+          'pubspec_map',
           'version_string',
           'created_at',
           'updated_at'

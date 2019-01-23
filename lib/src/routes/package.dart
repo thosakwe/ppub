@@ -7,6 +7,7 @@ import 'package:file/file.dart';
 import 'package:private_pub/models.dart';
 import 'package:private_pub/private_pub.dart';
 import 'package:pubspec_parse/pubspec_parse.dart';
+import 'package:yaml/yaml.dart' as yaml;
 import 'common.dart';
 
 // TODO: Root URL that lists packages
@@ -70,7 +71,9 @@ void Function(Router<RequestHandler>) packageRoutes(
               orElse: () => throw AngelHttpException.badRequest(
                   message: 'Missing "pubspec.yaml" file.'));
           var pubspecYaml = utf8.decode(pubspecFile.rawContent.toUint8List());
-          var pubspec = Pubspec.parse(pubspecYaml, sourceUrl: 'pubspec.yaml');
+          var pubspecMap =
+              yaml.loadYaml(pubspecYaml, sourceUrl: 'pubspec.yaml') as Map;
+          var pubspec = Pubspec.fromJson(pubspecMap, lenient: true);
 
           // Check if such a package already exists.
           var packageQuery = PackageQuery()..where.name.equals(pubspec.name);
@@ -135,7 +138,7 @@ void Function(Router<RequestHandler>) packageRoutes(
           var versionQuery = PackageVersionQuery();
           versionQuery.values
             ..packageId = package.idAsInt
-            ..pubspecYaml = pubspecYaml
+            ..pubspecMap = pubspecMap
             ..versionString = pubspec.version.toString()
             ..archiveUrl = archiveUrl.toString()
             ..createdAt = DateTime.now();

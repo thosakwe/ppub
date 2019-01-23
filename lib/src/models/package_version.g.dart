@@ -13,7 +13,7 @@ class PackageVersionMigration extends Migration {
       table.serial('id')..primaryKey();
       table.integer('package_id');
       table.varChar('archive_url');
-      table.varChar('pubspec_yaml');
+      table.declare('pubspec_map', new ColumnType('jsonb'));
       table.varChar('version_string');
       table.timeStamp('created_at');
       table.timeStamp('updated_at');
@@ -52,7 +52,7 @@ class PackageVersionQuery
       'id',
       'package_id',
       'archive_url',
-      'pubspec_yaml',
+      'pubspec_map',
       'version_string',
       'created_at',
       'updated_at'
@@ -75,7 +75,7 @@ class PackageVersionQuery
         id: row[0].toString(),
         packageId: (row[1] as int),
         archiveUrl: (row[2] as String),
-        pubspecYaml: (row[3] as String),
+        pubspecMap: (row[3] as Map<dynamic, dynamic>),
         versionString: (row[4] as String),
         createdAt: (row[5] as DateTime),
         updatedAt: (row[6] as DateTime));
@@ -93,7 +93,7 @@ class PackageVersionQueryWhere extends QueryWhere {
       : id = new NumericSqlExpressionBuilder<int>(query, 'id'),
         packageId = new NumericSqlExpressionBuilder<int>(query, 'package_id'),
         archiveUrl = new StringSqlExpressionBuilder(query, 'archive_url'),
-        pubspecYaml = new StringSqlExpressionBuilder(query, 'pubspec_yaml'),
+        pubspecMap = new MapSqlExpressionBuilder(query, 'pubspec_map'),
         versionString = new StringSqlExpressionBuilder(query, 'version_string'),
         createdAt = new DateTimeSqlExpressionBuilder(query, 'created_at'),
         updatedAt = new DateTimeSqlExpressionBuilder(query, 'updated_at');
@@ -104,7 +104,7 @@ class PackageVersionQueryWhere extends QueryWhere {
 
   final StringSqlExpressionBuilder archiveUrl;
 
-  final StringSqlExpressionBuilder pubspecYaml;
+  final MapSqlExpressionBuilder pubspecMap;
 
   final StringSqlExpressionBuilder versionString;
 
@@ -118,7 +118,7 @@ class PackageVersionQueryWhere extends QueryWhere {
       id,
       packageId,
       archiveUrl,
-      pubspecYaml,
+      pubspecMap,
       versionString,
       createdAt,
       updatedAt
@@ -142,11 +142,11 @@ class PackageVersionQueryValues extends MapQueryValues {
   }
 
   set archiveUrl(String value) => values['archive_url'] = value;
-  String get pubspecYaml {
-    return (values['pubspec_yaml'] as String);
+  Map<dynamic, dynamic> get pubspecMap {
+    return (values['pubspec_map'] as Map<dynamic, dynamic>);
   }
 
-  set pubspecYaml(String value) => values['pubspec_yaml'] = value;
+  set pubspecMap(Map<dynamic, dynamic> value) => values['pubspec_map'] = value;
   String get versionString {
     return (values['version_string'] as String);
   }
@@ -166,7 +166,7 @@ class PackageVersionQueryValues extends MapQueryValues {
     values.addAll({
       'package_id': model.packageId,
       'archive_url': model.archiveUrl,
-      'pubspec_yaml': model.pubspecYaml,
+      'pubspec_map': model.pubspecMap,
       'version_string': model.versionString,
       'created_at': model.createdAt,
       'updated_at': model.updatedAt
@@ -184,10 +184,11 @@ class PackageVersion extends _PackageVersion {
       {this.id,
       this.packageId,
       this.archiveUrl,
-      this.pubspecYaml,
+      Map<dynamic, dynamic> pubspecMap,
       this.versionString,
       this.createdAt,
-      this.updatedAt});
+      this.updatedAt})
+      : this.pubspecMap = new Map.unmodifiable(pubspecMap ?? {});
 
   @override
   final String id;
@@ -199,7 +200,7 @@ class PackageVersion extends _PackageVersion {
   final String archiveUrl;
 
   @override
-  final String pubspecYaml;
+  final Map<dynamic, dynamic> pubspecMap;
 
   @override
   final String versionString;
@@ -214,7 +215,7 @@ class PackageVersion extends _PackageVersion {
       {String id,
       int packageId,
       String archiveUrl,
-      String pubspecYaml,
+      Map<dynamic, dynamic> pubspecMap,
       String versionString,
       DateTime createdAt,
       DateTime updatedAt}) {
@@ -222,7 +223,7 @@ class PackageVersion extends _PackageVersion {
         id: id ?? this.id,
         packageId: packageId ?? this.packageId,
         archiveUrl: archiveUrl ?? this.archiveUrl,
-        pubspecYaml: pubspecYaml ?? this.pubspecYaml,
+        pubspecMap: pubspecMap ?? this.pubspecMap,
         versionString: versionString ?? this.versionString,
         createdAt: createdAt ?? this.createdAt,
         updatedAt: updatedAt ?? this.updatedAt);
@@ -233,7 +234,9 @@ class PackageVersion extends _PackageVersion {
         other.id == id &&
         other.packageId == packageId &&
         other.archiveUrl == archiveUrl &&
-        other.pubspecYaml == pubspecYaml &&
+        const MapEquality<dynamic, dynamic>(
+                keys: const DefaultEquality(), values: const DefaultEquality())
+            .equals(other.pubspecMap, pubspecMap) &&
         other.versionString == versionString &&
         other.createdAt == createdAt &&
         other.updatedAt == updatedAt;
@@ -245,7 +248,7 @@ class PackageVersion extends _PackageVersion {
       id,
       packageId,
       archiveUrl,
-      pubspecYaml,
+      pubspecMap,
       versionString,
       createdAt,
       updatedAt
@@ -267,7 +270,9 @@ abstract class PackageVersionSerializer {
         id: map['id'] as String,
         packageId: map['package_id'] as int,
         archiveUrl: map['archive_url'] as String,
-        pubspecYaml: map['pubspec_yaml'] as String,
+        pubspecMap: map['pubspec_map'] is Map
+            ? (map['pubspec_map'] as Map).cast<dynamic, dynamic>()
+            : null,
         versionString: map['version_string'] as String,
         createdAt: map['created_at'] != null
             ? (map['created_at'] is DateTime
@@ -289,7 +294,7 @@ abstract class PackageVersionSerializer {
       'id': model.id,
       'package_id': model.packageId,
       'archive_url': model.archiveUrl,
-      'pubspec_yaml': model.pubspecYaml,
+      'pubspec_map': model.pubspecMap,
       'version_string': model.versionString,
       'created_at': model.createdAt?.toIso8601String(),
       'updated_at': model.updatedAt?.toIso8601String()
@@ -302,7 +307,7 @@ abstract class PackageVersionFields {
     id,
     packageId,
     archiveUrl,
-    pubspecYaml,
+    pubspecMap,
     versionString,
     createdAt,
     updatedAt
@@ -314,7 +319,7 @@ abstract class PackageVersionFields {
 
   static const String archiveUrl = 'archive_url';
 
-  static const String pubspecYaml = 'pubspec_yaml';
+  static const String pubspecMap = 'pubspec_map';
 
   static const String versionString = 'version_string';
 

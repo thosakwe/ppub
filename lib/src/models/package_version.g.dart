@@ -13,7 +13,7 @@ class PackageVersionMigration extends Migration {
       table.serial('id')..primaryKey();
       table.integer('package_id');
       table.varChar('archive_url');
-      table.declare('pubspec_map', new ColumnType('jsonb'));
+      table.declare('pubspec_map', ColumnType('jsonb'));
       table.varChar('version_string');
       table.timeStamp('created_at');
       table.timeStamp('updated_at');
@@ -32,14 +32,21 @@ class PackageVersionMigration extends Migration {
 
 class PackageVersionQuery
     extends Query<PackageVersion, PackageVersionQueryWhere> {
-  PackageVersionQuery() {
-    _where = new PackageVersionQueryWhere(this);
+  PackageVersionQuery({Set<String> trampoline}) {
+    trampoline ??= Set();
+    trampoline.add(tableName);
+    _where = PackageVersionQueryWhere(this);
   }
 
   @override
-  final PackageVersionQueryValues values = new PackageVersionQueryValues();
+  final PackageVersionQueryValues values = PackageVersionQueryValues();
 
   PackageVersionQueryWhere _where;
+
+  @override
+  get casts {
+    return {};
+  }
 
   @override
   get tableName {
@@ -66,12 +73,12 @@ class PackageVersionQuery
 
   @override
   PackageVersionQueryWhere newWhereClause() {
-    return new PackageVersionQueryWhere(this);
+    return PackageVersionQueryWhere(this);
   }
 
   static PackageVersion parseRow(List row) {
     if (row.every((x) => x == null)) return null;
-    var model = new PackageVersion(
+    var model = PackageVersion(
         id: row[0].toString(),
         packageId: (row[1] as int),
         archiveUrl: (row[2] as String),
@@ -90,13 +97,13 @@ class PackageVersionQuery
 
 class PackageVersionQueryWhere extends QueryWhere {
   PackageVersionQueryWhere(PackageVersionQuery query)
-      : id = new NumericSqlExpressionBuilder<int>(query, 'id'),
-        packageId = new NumericSqlExpressionBuilder<int>(query, 'package_id'),
-        archiveUrl = new StringSqlExpressionBuilder(query, 'archive_url'),
-        pubspecMap = new MapSqlExpressionBuilder(query, 'pubspec_map'),
-        versionString = new StringSqlExpressionBuilder(query, 'version_string'),
-        createdAt = new DateTimeSqlExpressionBuilder(query, 'created_at'),
-        updatedAt = new DateTimeSqlExpressionBuilder(query, 'updated_at');
+      : id = NumericSqlExpressionBuilder<int>(query, 'id'),
+        packageId = NumericSqlExpressionBuilder<int>(query, 'package_id'),
+        archiveUrl = StringSqlExpressionBuilder(query, 'archive_url'),
+        pubspecMap = MapSqlExpressionBuilder(query, 'pubspec_map'),
+        versionString = StringSqlExpressionBuilder(query, 'version_string'),
+        createdAt = DateTimeSqlExpressionBuilder(query, 'created_at'),
+        updatedAt = DateTimeSqlExpressionBuilder(query, 'updated_at');
 
   final NumericSqlExpressionBuilder<int> id;
 
@@ -127,6 +134,11 @@ class PackageVersionQueryWhere extends QueryWhere {
 }
 
 class PackageVersionQueryValues extends MapQueryValues {
+  @override
+  get casts {
+    return {};
+  }
+
   int get id {
     return (values['id'] as int);
   }
@@ -163,14 +175,12 @@ class PackageVersionQueryValues extends MapQueryValues {
 
   set updatedAt(DateTime value) => values['updated_at'] = value;
   void copyFrom(PackageVersion model) {
-    values.addAll({
-      'package_id': model.packageId,
-      'archive_url': model.archiveUrl,
-      'pubspec_map': model.pubspecMap,
-      'version_string': model.versionString,
-      'created_at': model.createdAt,
-      'updated_at': model.updatedAt
-    });
+    packageId = model.packageId;
+    archiveUrl = model.archiveUrl;
+    pubspecMap = model.pubspecMap;
+    versionString = model.versionString;
+    createdAt = model.createdAt;
+    updatedAt = model.updatedAt;
   }
 }
 
@@ -303,7 +313,7 @@ abstract class PackageVersionSerializer {
 }
 
 abstract class PackageVersionFields {
-  static const List<String> allFields = const <String>[
+  static const List<String> allFields = <String>[
     id,
     packageId,
     archiveUrl,

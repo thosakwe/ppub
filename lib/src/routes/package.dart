@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io' show gzip, BytesBuilder;
 import 'package:angel_framework/angel_framework.dart';
@@ -19,6 +20,8 @@ void Function(Router<RequestHandler>) packageRoutes(
     var p = fs.path;
 
     Future<bool> resolvePackage(RequestContext req, ResponseContext res) async {
+      print('Request URI: ${req.uri}');
+
       var query = PackageQuery()
         ..where.name.equals(req.params['name'] as String);
       var package = await query.getOne(executor);

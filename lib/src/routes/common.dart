@@ -1,11 +1,32 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:angel_framework/angel_framework.dart';
 import 'package:angel_orm/angel_orm.dart';
 import 'package:dbcrypt/dbcrypt.dart';
+import 'package:googleapis/oauth2/v2.dart';
+import 'package:googleapis_auth/auth.dart';
+import 'package:googleapis_auth/auth_io.dart';
+import 'package:http/io_client.dart' as http;
 import 'package:private_pub/models.dart';
 
 Future<bool> resolveUser(RequestContext req, ResponseContext res) async {
-  if (req.headers.value('authorization')?.startsWith('Basic') != true) {
+  if (req.headers.value('authorization')?.startsWith('Bearer ') == true) {
+    var tokenData = req.headers.value('authorization').substring(7);
+    var token = AccessToken(
+        'Bearer', tokenData, DateTime.now().add(Duration(minutes: 1)).toUtc());
+    var credentials = AccessCredentials(
+        token, null, ['https://www.googleapis.com/auth/userinfo.email']);
+    var clientId = ClientId(
+        '818368855108-8grd2eg9tj9f38os6f1urbcvsq399u8n.apps.'
+        'googleusercontent.com',
+        'SWeqj8seoJW0w7_CpEPFLX0K');
+    var client = authenticatedClient(http.IOClient(), credentials);
+    var oauth2 = Oauth2Api(client);
+    var me = await oauth2.userinfo.v2.me.get();
+    print(me.toJson()); 
+    // var client = autoRefreshingClient(clientId, credentials, http.IOClient());
+    throw me.toJson();
+  } else if (req.headers.value('authorization')?.startsWith('Basic') != true) {
     throw AngelHttpException.badRequest(message: 'Missing Basic auth header.');
   } else {
     var basicValue = req.headers.value('authorization').substring(5).trim();
@@ -17,10 +38,11 @@ Future<bool> resolveUser(RequestContext req, ResponseContext res) async {
           message: 'Invalid Basic auth header.');
     }
 
-    var email = s[0].toLowerCase(), password = s[1];
+    var username = s[0].toLowerCase(), password = s[1];
+    print([username, password]);
     var executor = req.container.make<QueryExecutor>();
     var crypt = DBCrypt();
-    var query = UserQuery()..where.email.equals(email);
+    var query = UserQuery()..where.username.equals(username);
     var user = await query.getOne(executor);
 
     if (user == null) {

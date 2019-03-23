@@ -31,14 +31,21 @@ class UserMigration extends Migration {
 // **************************************************************************
 
 class UserQuery extends Query<User, UserQueryWhere> {
-  UserQuery() {
-    _where = new UserQueryWhere(this);
+  UserQuery({Set<String> trampoline}) {
+    trampoline ??= Set();
+    trampoline.add(tableName);
+    _where = UserQueryWhere(this);
   }
 
   @override
-  final UserQueryValues values = new UserQueryValues();
+  final UserQueryValues values = UserQueryValues();
 
   UserQueryWhere _where;
+
+  @override
+  get casts {
+    return {};
+  }
 
   @override
   get tableName {
@@ -65,12 +72,12 @@ class UserQuery extends Query<User, UserQueryWhere> {
 
   @override
   UserQueryWhere newWhereClause() {
-    return new UserQueryWhere(this);
+    return UserQueryWhere(this);
   }
 
   static User parseRow(List row) {
     if (row.every((x) => x == null)) return null;
-    var model = new User(
+    var model = User(
         id: row[0].toString(),
         username: (row[1] as String),
         email: (row[2] as String),
@@ -89,14 +96,13 @@ class UserQuery extends Query<User, UserQueryWhere> {
 
 class UserQueryWhere extends QueryWhere {
   UserQueryWhere(UserQuery query)
-      : id = new NumericSqlExpressionBuilder<int>(query, 'id'),
-        username = new StringSqlExpressionBuilder(query, 'username'),
-        email = new StringSqlExpressionBuilder(query, 'email'),
-        hashedPassword =
-            new StringSqlExpressionBuilder(query, 'hashed_password'),
-        salt = new StringSqlExpressionBuilder(query, 'salt'),
-        createdAt = new DateTimeSqlExpressionBuilder(query, 'created_at'),
-        updatedAt = new DateTimeSqlExpressionBuilder(query, 'updated_at');
+      : id = NumericSqlExpressionBuilder<int>(query, 'id'),
+        username = StringSqlExpressionBuilder(query, 'username'),
+        email = StringSqlExpressionBuilder(query, 'email'),
+        hashedPassword = StringSqlExpressionBuilder(query, 'hashed_password'),
+        salt = StringSqlExpressionBuilder(query, 'salt'),
+        createdAt = DateTimeSqlExpressionBuilder(query, 'created_at'),
+        updatedAt = DateTimeSqlExpressionBuilder(query, 'updated_at');
 
   final NumericSqlExpressionBuilder<int> id;
 
@@ -119,6 +125,11 @@ class UserQueryWhere extends QueryWhere {
 }
 
 class UserQueryValues extends MapQueryValues {
+  @override
+  get casts {
+    return {};
+  }
+
   int get id {
     return (values['id'] as int);
   }
@@ -155,14 +166,12 @@ class UserQueryValues extends MapQueryValues {
 
   set updatedAt(DateTime value) => values['updated_at'] = value;
   void copyFrom(User model) {
-    values.addAll({
-      'username': model.username,
-      'email': model.email,
-      'hashed_password': model.hashedPassword,
-      'salt': model.salt,
-      'created_at': model.createdAt,
-      'updated_at': model.updatedAt
-    });
+    username = model.username;
+    email = model.email;
+    hashedPassword = model.hashedPassword;
+    salt = model.salt;
+    createdAt = model.createdAt;
+    updatedAt = model.updatedAt;
   }
 }
 
@@ -283,7 +292,7 @@ abstract class UserSerializer {
 }
 
 abstract class UserFields {
-  static const List<String> allFields = const <String>[
+  static const List<String> allFields = <String>[
     id,
     username,
     email,

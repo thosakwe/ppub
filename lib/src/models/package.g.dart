@@ -28,11 +28,13 @@ class PackageMigration extends Migration {
 // **************************************************************************
 
 class PackageQuery extends Query<Package, PackageQueryWhere> {
-  PackageQuery() {
-    _where = new PackageQueryWhere(this);
-    leftJoin(
-        '(' + new PackageVersionQuery().compile() + ')', 'id', 'package_id',
+  PackageQuery({Set<String> trampoline}) {
+    trampoline ??= Set();
+    trampoline.add(tableName);
+    _where = PackageQueryWhere(this);
+    leftJoin(PackageVersionQuery(trampoline: trampoline), 'id', 'package_id',
         additionalFields: const [
+          'id',
           'package_id',
           'archive_url',
           'pubspec_map',
@@ -43,9 +45,14 @@ class PackageQuery extends Query<Package, PackageQueryWhere> {
   }
 
   @override
-  final PackageQueryValues values = new PackageQueryValues();
+  final PackageQueryValues values = PackageQueryValues();
 
   PackageQueryWhere _where;
+
+  @override
+  get casts {
+    return {};
+  }
 
   @override
   get tableName {
@@ -64,12 +71,12 @@ class PackageQuery extends Query<Package, PackageQueryWhere> {
 
   @override
   PackageQueryWhere newWhereClause() {
-    return new PackageQueryWhere(this);
+    return PackageQueryWhere(this);
   }
 
   static Package parseRow(List row) {
     if (row.every((x) => x == null)) return null;
-    var model = new Package(
+    var model = Package(
         id: row[0].toString(),
         name: (row[1] as String),
         createdAt: (row[2] as DateTime),
@@ -148,10 +155,10 @@ class PackageQuery extends Query<Package, PackageQueryWhere> {
 
 class PackageQueryWhere extends QueryWhere {
   PackageQueryWhere(PackageQuery query)
-      : id = new NumericSqlExpressionBuilder<int>(query, 'id'),
-        name = new StringSqlExpressionBuilder(query, 'name'),
-        createdAt = new DateTimeSqlExpressionBuilder(query, 'created_at'),
-        updatedAt = new DateTimeSqlExpressionBuilder(query, 'updated_at');
+      : id = NumericSqlExpressionBuilder<int>(query, 'id'),
+        name = StringSqlExpressionBuilder(query, 'name'),
+        createdAt = DateTimeSqlExpressionBuilder(query, 'created_at'),
+        updatedAt = DateTimeSqlExpressionBuilder(query, 'updated_at');
 
   final NumericSqlExpressionBuilder<int> id;
 
@@ -168,6 +175,11 @@ class PackageQueryWhere extends QueryWhere {
 }
 
 class PackageQueryValues extends MapQueryValues {
+  @override
+  get casts {
+    return {};
+  }
+
   int get id {
     return (values['id'] as int);
   }
@@ -189,11 +201,9 @@ class PackageQueryValues extends MapQueryValues {
 
   set updatedAt(DateTime value) => values['updated_at'] = value;
   void copyFrom(Package model) {
-    values.addAll({
-      'name': model.name,
-      'created_at': model.createdAt,
-      'updated_at': model.updatedAt
-    });
+    name = model.name;
+    createdAt = model.createdAt;
+    updatedAt = model.updatedAt;
   }
 }
 
@@ -271,9 +281,10 @@ abstract class PackageSerializer {
         id: map['id'] as String,
         name: map['name'] as String,
         versions: map['versions'] is Iterable
-            ? new List.unmodifiable(((map['versions'] as Iterable)
-                    .where((x) => x is Map) as Iterable<Map>)
-                .map(PackageVersionSerializer.fromMap))
+            ? new List.unmodifiable(
+                ((map['versions'] as Iterable).where((x) => x is Map))
+                    .cast<Map>()
+                    .map(PackageVersionSerializer.fromMap))
             : null,
         createdAt: map['created_at'] != null
             ? (map['created_at'] is DateTime
@@ -304,7 +315,7 @@ abstract class PackageSerializer {
 }
 
 abstract class PackageFields {
-  static const List<String> allFields = const <String>[
+  static const List<String> allFields = <String>[
     id,
     name,
     versions,

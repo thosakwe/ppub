@@ -19,6 +19,8 @@ dependencies:
   archive: ^2.0.0
   args: ^1.0.0
   dbcrypt: ^1.0.0
+  googleapis: ^0.53.0
+  googleapis_auth: ^0.2.7
   path: ^1.0.0
   prompts: ^1.0.0
   pubspec_parse: ^0.1.3

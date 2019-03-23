@@ -29,14 +29,21 @@ class UploaderMigration extends Migration {
 // **************************************************************************
 
 class UploaderQuery extends Query<Uploader, UploaderQueryWhere> {
-  UploaderQuery() {
-    _where = new UploaderQueryWhere(this);
+  UploaderQuery({Set<String> trampoline}) {
+    trampoline ??= Set();
+    trampoline.add(tableName);
+    _where = UploaderQueryWhere(this);
   }
 
   @override
-  final UploaderQueryValues values = new UploaderQueryValues();
+  final UploaderQueryValues values = UploaderQueryValues();
 
   UploaderQueryWhere _where;
+
+  @override
+  get casts {
+    return {};
+  }
 
   @override
   get tableName {
@@ -55,12 +62,12 @@ class UploaderQuery extends Query<Uploader, UploaderQueryWhere> {
 
   @override
   UploaderQueryWhere newWhereClause() {
-    return new UploaderQueryWhere(this);
+    return UploaderQueryWhere(this);
   }
 
   static Uploader parseRow(List row) {
     if (row.every((x) => x == null)) return null;
-    var model = new Uploader(
+    var model = Uploader(
         id: row[0].toString(),
         userId: (row[1] as int),
         packageId: (row[2] as int),
@@ -77,11 +84,11 @@ class UploaderQuery extends Query<Uploader, UploaderQueryWhere> {
 
 class UploaderQueryWhere extends QueryWhere {
   UploaderQueryWhere(UploaderQuery query)
-      : id = new NumericSqlExpressionBuilder<int>(query, 'id'),
-        userId = new NumericSqlExpressionBuilder<int>(query, 'user_id'),
-        packageId = new NumericSqlExpressionBuilder<int>(query, 'package_id'),
-        createdAt = new DateTimeSqlExpressionBuilder(query, 'created_at'),
-        updatedAt = new DateTimeSqlExpressionBuilder(query, 'updated_at');
+      : id = NumericSqlExpressionBuilder<int>(query, 'id'),
+        userId = NumericSqlExpressionBuilder<int>(query, 'user_id'),
+        packageId = NumericSqlExpressionBuilder<int>(query, 'package_id'),
+        createdAt = DateTimeSqlExpressionBuilder(query, 'created_at'),
+        updatedAt = DateTimeSqlExpressionBuilder(query, 'updated_at');
 
   final NumericSqlExpressionBuilder<int> id;
 
@@ -100,6 +107,11 @@ class UploaderQueryWhere extends QueryWhere {
 }
 
 class UploaderQueryValues extends MapQueryValues {
+  @override
+  get casts {
+    return {};
+  }
+
   int get id {
     return (values['id'] as int);
   }
@@ -126,12 +138,10 @@ class UploaderQueryValues extends MapQueryValues {
 
   set updatedAt(DateTime value) => values['updated_at'] = value;
   void copyFrom(Uploader model) {
-    values.addAll({
-      'user_id': model.userId,
-      'package_id': model.packageId,
-      'created_at': model.createdAt,
-      'updated_at': model.updatedAt
-    });
+    userId = model.userId;
+    packageId = model.packageId;
+    createdAt = model.createdAt;
+    updatedAt = model.updatedAt;
   }
 }
 
@@ -229,7 +239,7 @@ abstract class UploaderSerializer {
 }
 
 abstract class UploaderFields {
-  static const List<String> allFields = const <String>[
+  static const List<String> allFields = <String>[
     id,
     userId,
     packageId,
